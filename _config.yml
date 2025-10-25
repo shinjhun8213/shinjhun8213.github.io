@@ -12,7 +12,7 @@ site_theme               : "default" # Currently available options are "default"
 title                    : "늦었지만 천천히"
 title_separator          : "-"
 name                     : &name "slowy"
-description              : &description "디지털 트윈 연구"   # Update this with a general description of your site, this is the default if not overridden by a page
+description              : &description "디지털 트윈 3D"   # Update this with a general description of your site, this is the default if not overridden by a page
 url                      : "https://shinjhun8213.github.io"
 baseurl                  : ""
 repository               : "shinjhun8213/shinjhun8213.github.io"
