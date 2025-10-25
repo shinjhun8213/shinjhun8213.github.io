@@ -1,121 +1,146 @@
----
-title: 'NeRF: Neural Radiance Fields 논문 리뷰'
-date: 2025-10-25
-permalink: /posts/2025/10/nerf-review/
-tags:
-  - nerf
-  - 3d-vision
-  - view-synthesis
-  - deep-learning
-categories:
-  - paper-review
-  - foundational
----
+# NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis
 
-NeRF(Neural Radiance Fields)는 2020년 ECCV에서 발표된 3D vision 분야의 획기적인 논문입니다. 5D 좌표로부터 색상과 밀도를 출력하는 MLP를 사용하여 새로운 시점을 합성합니다.
+## 📋 논문 정보 (Information)
+- **저자 (Authors)**: Ben Mildenhall, Pratul P. Srinivasan, Matthew Tancik, Jonathan T. Barron, Ravi Ramamoorthi, Ren Ng
+- **소속 (Institution)**: UC Berkeley, Google Research, UC San Diego
+- **학회/저널 (Conference/Journal)**: ECCV 2020
+- **발표 연도 (Year)**: 2020
+- **논문 링크 (Paper Link)**: [arXiv:2003.08934v2](https://arxiv.org/abs/2003.08934)
+- **키워드 (Keywords)**: scene representation, view synthesis, image-based rendering, volume rendering, 3D deep learning
 
-## 논문 정보
+## 📝 Abstract
 
-**제목**: NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis  
-**저자**: Ben Mildenhall et al. (UC Berkeley, Google Research)  
-**학회**: ECCV 2020 (Best Paper Honorable Mention)  
-**논문**: [arXiv](https://arxiv.org/abs/2003.08934)  
-**코드**: [GitHub](https://github.com/bmild/nerf)  
-**프로젝트**: [홈페이지](https://www.matthewtancik.com/nerf)
+복잡한 장면의 새로운 시점을 합성하기 위해 희소한 입력 뷰 세트를 사용하여 연속적인 볼륨 장면 함수를 최적화하는 방법을 제시합니다. 알고리즘은 완전 연결된 (비합성곱) 딥 네트워크를 사용하여 장면을 표현하며, 입력은 단일 연속 5D 좌표(공간 위치 $(x, y, z)$와 시야 방향 $(\theta, \phi)$)이고 출력은 해당 공간 위치에서의 부피 밀도와 시점 의존적 방출 방사 휘도입니다. 카메라 광선을 따라 5D 좌표를 쿼리하고 고전적인 볼륨 렌더링 기술을 사용하여 출력 색상과 밀도를 이미지로 투영하여 뷰를 합성합니다. 볼륨 렌더링은 자연스럽게 미분 가능하기 때문에, 표현을 최적화하는 데 필요한 유일한 입력은 알려진 카메라 포즈를 가진 이미지 세트입니다. 복잡한 기하학과 외관을 가진 장면의 사실적인 새로운 뷰를 렌더링하기 위해 신경 방사 필드를 효과적으로 최적화하는 방법을 설명하고, 신경 렌더링 및 뷰 합성에 대한 이전 작업보다 우수한 결과를 보여줍니다.
 
-## 핵심 기여
+## 🎯 연구 동기 (Motivation)
 
-1. **5D Neural Radiance Field**: 위치(x,y,z) + 방향(θ,φ)을 입력받아 색상과 밀도 출력
-2. **Positional Encoding**: 고주파 디테일 학습을 위한 위치 인코딩 (PSNR 5dB 향상)
-3. **Hierarchical Volume Sampling**: Coarse-to-fine 샘플링으로 렌더링 효율 개선
-4. **SOTA 성능**: 모든 벤치마크에서 압도적 성능
+오랫동안 지속되어 온 뷰 합성 문제를 새로운 방식으로 다루기 위해, 캡처된 이미지 세트를 렌더링하는 오차를 최소화하도록 연속 5D 장면 표현의 매개변수를 직접 최적화합니다. 기존의 이산화된 복셀 그리드는 고해상도에서 복잡한 장면을 모델링할 때 엄청난 저장 비용 문제가 있었으나, 이 방법은 이를 극복합니다.
 
-## 방법론
+## 🔖 관련 연구 (Related Work)
 
-## Neural Radiance Field 표현
+### Neural 3D Shape Representations
 
-NeRF는 연속적인 volumetric scene을 MLP $F_\Theta$로 표현합니다:
+최근 연구는 xyz 좌표를 부호 거리 함수(signed distance function) 또는 점유 필드(occupancy field)로 매핑하는 깊은 네트워크를 최적화하여 연속 3D 형상을 레벨 세트로 암시적으로 표현하는 것을 조사했습니다. 그러나 이러한 모델은 일반적으로 ShapeNet과 같은 합성 3D 형상 데이터셋에서 얻은 실측 3D 기하학에 대한 액세스가 필요하다는 제약이 있습니다. Niemeyer et al.은 표면을 3D 점유 필드로 표현하고 수치적 방법을 사용하여 각 광선에 대한 표면 교차점을 찾습니다. Sitzmann et al.은 각 연속 3D 좌표에서 특징 벡터와 RGB 색상을 출력하는 신경 3D 표현을 사용하고, 광선을 따라 진행하여 표면 위치를 결정하는 순환 신경망으로 구성된 미분 가능한 렌더링 함수를 제안합니다. 이러한 기술은 잠재적으로 복잡하고 고해상도 기하학을 표현할 수 있지만, 지금까지는 낮은 기하학적 복잡도를 가진 단순한 형상으로 제한되어 과도하게 부드러운 렌더링을 생성했습니다.
 
-$$
-F_\Theta: (\mathbf{x}, \mathbf{d}) \to (\mathbf{c}, \sigma)
-$$
+### View Synthesis and Image-Based Rendering
 
-여기서:
-- 입력: 3D 위치 $\mathbf{x} = (x, y, z)$, 2D 방향 $\mathbf{d} = (\theta, \phi)$
-- 출력: RGB 색상 $\mathbf{c} = (r, g, b)$, 볼륨 밀도 $\sigma$
+조밀한 뷰 샘플링이 주어지면, 간단한 라이트 필드 샘플 보간 기술로 사실적인 새로운 뷰를 재구성할 수 있습니다. 희소한 뷰 샘플링으로 새로운 뷰 합성을 위해, 컴퓨터 비전 및 그래픽 커뮤니티는 관찰된 이미지에서 전통적인 기하학 및 외관 표현을 예측하여 상당한 진전을 이루었습니다. 한 가지 인기 있는 접근 방식 부류는 diffuse 또는 view-dependent 외관을 가진 메쉬 기반 장면 표현을 사용합니다. 미분 가능한 rasterizer 또는 pathtracer는 그래디언트 하강을 사용하여 입력 이미지 세트를 재현하도록 메쉬 표현을 직접 최적화할 수 있습니다. 그러나 이미지 재투영 기반 그래디언트 기반 메쉬 최적화는 손실 landscape의 지역 최소값 또는 나쁜 조건 때문에 어려운 경우가 많습니다.
 
-### Volume Rendering
+볼륨 표현을 사용하는 다른 방법 부류는 입력 RGB 이미지 세트에서 고품질 사실적 뷰 합성 작업을 해결합니다. 볼륨 방법은 복잡한 형상과 재질을 사실적으로 나타낼 수 있으며, 그래디언트 기반 최적화에 적합하고, 메쉬 기반 방법보다 시각적으로 덜 산만한 아티팩트를 생성하는 경향이 있습니다. 초기 볼륨 접근 방식은 관찰된 이미지를 사용하여 복셀 그리드를 직접 색칠했습니다. 최근 여러 방법은 대규모 다중 장면 데이터셋을 사용하여 입력 이미지 세트에서 샘플링된 볼륨 표현을 예측하는 깊은 네트워크를 훈련한 다음, 테스트 시 새로운 뷰를 렌더링하기 위해 alpha-compositing 또는 학습된 합성을 사용합니다. 이러한 볼륨 기술은 새로운 뷰 합성에서 인상적인 결과를 달성했지만, 고해상도 이미지로 확장하는 능력은 이산 샘플링으로 인한 시간 및 공간 복잡성이 좋지 않아 근본적으로 제한됩니다.
 
-카메라 광선 $\mathbf{r}(t) = \mathbf{o} + t\mathbf{d}$를 따라 색상을 적분합니다:
+## 🔑 핵심 내용 (Key Contributions)
 
-$$
-C(\mathbf{r}) = \int_{t_n}^{t_f} T(t) \cdot \sigma(\mathbf{r}(t)) \cdot \mathbf{c}(\mathbf{r}(t), \mathbf{d}) \, dt
-$$
+### Neural Radiance Field 표현
 
-누적 투과도(transmittance)는 다음과 같이 정의됩니다:
+정적 장면을 공간의 각 점 $(x, y, z)$에서 각 방향 $(\theta, \phi)$으로 방출되는 방사 휘도를 출력하는 연속 5D 함수로 표현하며, 각 점에서의 밀도는 $(x, y, z)$를 통과하는 광선이 얼마나 많은 방사 휘도를 축적하는지를 제어하는 차등 불투명도 역할을 합니다. 이 함수를 나타내기 위해 합성곱 레이어가 없는 완전 연결된 신경망(MLP)을 최적화하여 단일 5D 좌표 $(x, y, z, \theta, \phi)$에서 단일 부피 밀도와 시점 의존적 RGB 색상으로 회귀합니다.
+
+표현이 다중 뷰 일관성을 갖도록 장려하기 위해, 네트워크가 부피 밀도 $\sigma$를 위치 $\mathbf{x}$만의 함수로 예측하도록 제한하는 반면, RGB 색상 $\mathbf{c}$는 위치와 시야 방향 모두의 함수로 예측할 수 있도록 합니다.
+
+### 볼륨 렌더링 기반 미분 가능 렌더링
+
+특정 시점에서 NeRF를 렌더링하기 위해: 1) 장면을 통과하는 카메라 광선을 따라 샘플링된 3D 점 세트를 생성하고, 2) 이러한 점과 해당 2D 시야 방향을 신경망의 입력으로 사용하여 색상과 밀도의 출력 세트를 생성하며, 3) 고전적인 볼륨 렌더링 기술을 사용하여 이러한 색상과 밀도를 2D 이미지로 축적합니다. 이 프로세스는 자연스럽게 미분 가능하므로, 그래디언트 하강을 사용하여 각 관찰된 이미지와 표현에서 렌더링된 해당 뷰 간의 오차를 최소화하여 이 모델을 최적화할 수 있습니다.
+
+## 🔬 방법론 (Methods)
+
+### Scene Representation
+
+연속 장면을 3D 위치 $\mathbf{x} = (x, y, z)$와 2D 시야 방향 $(\theta, \phi)$를 입력으로 하고, 방출된 색상 $\mathbf{c} = (r, g, b)$와 부피 밀도 $\sigma$를 출력으로 하는 5D 벡터 값 함수로 표현합니다. 실제로는 방향을 3D 카르테시안 단위 벡터 $\mathbf{d}$로 표현합니다. MLP 네트워크 $F_\Theta : (\mathbf{x}, \mathbf{d}) \to (\mathbf{c}, \sigma)$로 이 연속 5D 장면 표현을 근사하고 가중치 $\Theta$를 최적화하여 각 입력 5D 좌표를 해당 부피 밀도 및 방향 방출 색상으로 매핑합니다.
+
+MLP $F_\Theta$는 먼저 입력 3D 좌표 $\mathbf{x}$를 8개의 완전 연결 레이어(ReLU 활성화 및 레이어당 256채널 사용)로 처리하고 $\sigma$와 256차원 특징 벡터를 출력합니다. 이 특징 벡터는 카메라 광선의 시야 방향과 연결되어 하나의 추가 완전 연결 레이어(ReLU 활성화 및 128채널)를 통과하여 시점 의존적 RGB 색상을 출력합니다.
+
+### Volume Rendering with Radiance Fields
+
+5D 신경 방사 필드는 공간의 모든 점에서 부피 밀도와 방향 방출 방사 휘도로 장면을 나타냅니다. 고전적인 볼륨 렌더링 원리를 사용하여 장면을 통과하는 모든 광선의 색상을 렌더링합니다. 부피 밀도 $\sigma(\mathbf{x})$는 위치 $\mathbf{x}$에서 무한소 입자에서 광선이 종료될 차등 확률로 해석될 수 있습니다. 근거리 및 원거리 경계 $t_n$과 $t_f$를 갖는 카메라 광선 $\mathbf{r}(t) = \mathbf{o} + t\mathbf{d}$의 예상 색상 $C(\mathbf{r})$는 다음과 같습니다:
 
 $$
-T(t) = \exp\left(-\int_{t_n}^{t} \sigma(\mathbf{r}(s)) \, ds\right)
+C(\mathbf{r}) = \int_{t_n}^{t_f} T(t)\sigma(\mathbf{r}(t))\mathbf{c}(\mathbf{r}(t), \mathbf{d})dt, \quad \text{where } T(t) = \exp\left(-\int_{t_n}^t \sigma(\mathbf{r}(s))ds\right)
 $$
 
-## Positional Encoding
-
-고주파 디테일 학습을 위해 입력을 다음과 같이 인코딩합니다:
+함수 $T(t)$는 $t_n$에서 $t$까지 광선을 따라 누적된 투과율을 나타냅니다. 계층화된 샘플링을 사용하여 연속 적분을 수치적으로 추정합니다:
 
 $$
-\gamma(p) = \left(\sin(2^0\pi p), \cos(2^0\pi p), \ldots, \sin(2^{L-1}\pi p), \cos(2^{L-1}\pi p)\right)
+t_i \sim \mathcal{U}\left[t_n + \frac{i-1}{N}(t_f - t_n), t_n + \frac{i}{N}(t_f - t_n)\right]
 $$
 
-위치의 경우 $L=10$ (60차원), 방향의 경우 $L=4$ (24차원)을 사용합니다.
+이러한 샘플을 사용하여 구적법(quadrature rule)으로 $C(\mathbf{r})$를 추정합니다:
 
+$$
+\hat{C}(\mathbf{r}) = \sum_{i=1}^N T_i(1 - \exp(-\sigma_i \delta_i))\mathbf{c}_i, \quad \text{where } T_i = \exp\left(-\sum_{j=1}^{i-1} \sigma_j \delta_j\right)
+$$
 
-## 실험 결과
+여기서 $\delta_i = t_{i+1} - t_i$는 인접한 샘플 간의 거리입니다.
 
-| 데이터셋 | PSNR ↑ | SSIM ↑ | LPIPS ↓ |
-|---------|--------|--------|---------|
-| SRN | 22.26 | 0.846 | 0.170 |
-| LLFF | 24.88 | 0.911 | 0.114 |
-| **NeRF** | **31.01** | **0.947** | **0.081** |
+### Positional Encoding
 
-PSNR이 $6 \text{dB}$ 향상되었으며, 이는 $\text{PSNR} = 10 \log_{10}\left(\frac{MAX^2}{MSE}\right)$로 계산됩니다.
+신경망이 직접 $xyz\theta\phi$ 입력 좌표에서 작동하면 색상과 기하학의 고주파수 변화를 나타내는 데 성능이 저하됩니다. 이는 깊은 네트워크가 더 낮은 주파수 함수를 학습하는 경향이 있다는 최근 연구와 일치합니다. 네트워크에 전달하기 전에 고주파수 함수를 사용하여 입력을 더 높은 차원 공간으로 매핑하면 고주파수 변화를 포함하는 데이터를 더 잘 피팅할 수 있습니다.
 
-## 산업공학 관점
+$F_\Theta$를 $F_\Theta = F'_\Theta \circ \gamma$ 두 함수의 합성으로 재구성하며, 여기서 $\gamma$는 $\mathbb{R}$에서 더 높은 차원 공간 $\mathbb{R}^{2L}$로의 매핑이고 $F'_\Theta$는 여전히 일반 MLP입니다. 사용하는 인코딩 함수는 다음과 같습니다:
 
-### 제조업 응용 가능성
+$$
+\gamma(p) = \left(\sin(2^0\pi p), \cos(2^0\pi p), \cdots, \sin(2^{L-1}\pi p), \cos(2^{L-1}\pi p)\right)
+$$
 
-1. **디지털 트윈**: 공장 설비 사진으로 3D 환경 자동 재구성
-2. **품질 검사**: 다양한 각도의 합성 이미지로 학습 데이터 증강
-3. **AR 매뉴얼**: 설비 스캔으로 작업자 시점 가이드 생성
-4. **VR 안전 교육**: 위험 상황 시뮬레이션 환경 구축
+이 함수 $\gamma(\cdot)$는 $\mathbf{x}$의 세 좌표 값 각각에 개별적으로 적용되며([-1, 1]로 정규화), 카르테시안 시야 방향 단위 벡터 $\mathbf{d}$의 세 구성 요소에도 적용됩니다. 실험에서는 $\gamma(\mathbf{x})$에 대해 $L = 10$, $\gamma(\mathbf{d})$에 대해 $L = 4$로 설정했습니다.
 
-### 한계와 개선 방향
+### Hierarchical Volume Sampling
 
-- 렌더링 느림 (이미지당 30초) → 3D Gaussian Splatting으로 해결
-- 정적 장면만 가능 → Dynamic NeRF 연구 필요
-- 센서 데이터 융합 연구 가치 있음
+각 카메라 광선을 따라 $N$개의 쿼리 포인트에서 신경 방사 필드 네트워크를 밀집하게 평가하는 렌더링 전략은 비효율적입니다. 자유 공간과 가려진 영역은 렌더링된 이미지에 기여하지 않지만 여전히 반복적으로 샘플링됩니다. 장면을 나타내기 위해 하나의 네트워크만 사용하는 대신, "coarse"와 "fine" 두 개의 네트워크를 동시에 최적화합니다.
 
-## 후속 연구
+먼저 계층화된 샘플링을 사용하여 $N_c$개의 위치를 샘플링하고 이러한 위치에서 "coarse" 네트워크를 평가합니다. "coarse" 네트워크의 출력을 고려하여, 광선을 따라 관련 부분으로 편향된 더 많은 정보를 가진 샘플링을 생성합니다. "coarse" 네트워크에서 알파 합성된 색상을 다시 작성합니다:
 
-- **Instant-NGP** (2022): 1000배 가속
-- **3D Gaussian Splatting** (2023): 실시간 렌더링
-- **DreamFusion** (2023): Text-to-3D 생성
+$$
+\hat{C}_c(\mathbf{r}) = \sum_{i=1}^{N_c} w_i c_i, \quad w_i = T_i(1 - \exp(-\sigma_i \delta_i))
+$$
 
-## 개인 평가
+이러한 가중치를 $\hat{w}_i = w_i/\sum_{j=1}^{N_c} w_j$로 정규화하면 광선을 따라 구분적으로 일정한 PDF가 생성됩니다. 역변환 샘플링을 사용하여 이 분포에서 두 번째 $N_f$개 위치 세트를 샘플링하고, 첫 번째와 두 번째 샘플 세트의 합집합에서 "fine" 네트워크를 평가하여 모든 $N_c + N_f$ 샘플을 사용하여 광선의 최종 렌더링 색상 $\hat{C}_f(\mathbf{r})$를 계산합니다.
 
-**혁신성**: ⭐⭐⭐⭐⭐  
-**실용성**: ⭐⭐⭐  
-**재현성**: ⭐⭐⭐⭐
+### Implementation Details
 
-3D vision 연구의 출발점이자 필독 논문. Positional encoding의 중요성을 깨달았고, implicit representation의 강력함을 확인.
+각 장면에 대해 별도의 신경 연속 볼륨 표현 네트워크를 최적화합니다. 각 최적화 반복에서 데이터 세트의 모든 픽셀 세트에서 카메라 광선의 배치를 무작위로 샘플링한 다음 "coarse" 네트워크에서 $N_c$개 샘플과 "fine" 네트워크에서 $N_c + N_f$개 샘플을 쿼리합니다. 손실은 "coarse"와 "fine" 렌더링 모두에 대해 렌더링된 픽셀 색상과 실제 픽셀 색상 간의 총 제곱 오차입니다:
 
-## 다음에 읽을 논문
+$$
+\mathcal{L} = \sum_{\mathbf{r} \in \mathcal{R}} \left[\left\|\hat{C}_c(\mathbf{r}) - C(\mathbf{r})\right\|_2^2 + \left\|\hat{C}_f(\mathbf{r}) - C(\mathbf{r})\right\|_2^2\right]
+$$
 
-- [ ] 3D Gaussian Splatting (실시간 개선)
-- [ ] Instant-NGP (속도 개선)
-- [ ] UNIST 센서 융합 논문과 비교
+여기서 $\mathcal{R}$은 각 배치의 광선 세트이고, $C(\mathbf{r})$, $\hat{C}_c(\mathbf{r})$, $\hat{C}_f(\mathbf{r})$는 각각 광선 $\mathbf{r}$에 대한 실제, "coarse" 볼륨 예측, "fine" 볼륨 예측 RGB 색상입니다.
 
----
+실험에서는 배치 크기 4096개 광선을 사용하며, 각각 "coarse" 볼륨에서 $N_c = 64$개 좌표, "fine" 볼륨에서 추가 $N_f = 128$개 좌표에서 샘플링됩니다. Adam 옵티마이저를 사용하며, 학습률은 $5 \times 10^{-4}$에서 시작하여 최적화 과정에서 $5 \times 10^{-5}$로 지수적으로 감소합니다(다른 Adam 하이퍼파라미터는 $\beta_1 = 0.9$, $\beta_2 = 0.999$, $\epsilon = 10^{-7}$의 기본값으로 유지). 단일 장면의 최적화는 단일 NVIDIA V100 GPU에서 약 100-300k 반복이 필요하며 약 1-2일이 소요됩니다.
 
-**참고자료**  
-- [xoft 블로그 NeRF 설명](https://xoft.tistory.com/2)  
-- [공식 구현](https://github.com/bmild/nerf)
+## 🧪 실험 및 결과 (Experiments and Results)
+
+### 데이터셋
+
+세 가지 데이터셋에서 실험을 수행했습니다:
+
+1. **Diffuse Synthetic 360°**: DeepVoxels 데이터셋으로, 단순한 기하학을 가진 4개의 Lambertian 객체를 포함하며, 512×512 픽셀로 상반구에서 샘플링된 시점에서 렌더링됩니다(입력 479개, 테스트 1000개).
+
+2. **Realistic Synthetic 360°**: 복잡한 기하학과 사실적인 비-Lambertian 재질을 가진 8개 객체의 경로 추적 이미지로 구성됩니다. 6개는 상반구에서, 2개는 전체 구에서 렌더링되었으며, 각 장면의 100개 뷰를 입력으로, 200개를 테스트용으로 사용하며 모두 800×800 픽셀입니다.
+
+3. **Real Forward-Facing**: 핸드헬드 휴대폰으로 캡처한 복잡한 실제 장면의 8개 장면으로 구성되며, 20-62개 이미지로 캡처되고 1/8을 테스트 세트로 보류합니다. 모든 이미지는 1008×756 픽셀입니다.
+
+### 정량적 결과
+
+PSNR, SSIM, LPIPS 메트릭에서 이전 작업을 정량적으로 능가했습니다:
+
+- **Diffuse Synthetic 360°**: PSNR 40.15, SSIM 0.991, LPIPS 0.023
+- **Realistic Synthetic 360°**: PSNR 31.01, SSIM 0.947, LPIPS 0.081
+- **Real Forward-Facing**: PSNR 26.50, SSIM 0.811, LPIPS 0.250
+
+모든 메트릭에서 SRN, NV, LLFF보다 우수한 성능을 보였습니다.
+
+### Ablation Study
+
+설계 선택을 검증하기 위해 광범위한 ablation study를 수행했습니다:
+
+- Positional encoding이 없으면 PSNR이 31.01에서 28.77로 감소
+- View dependence가 없으면 PSNR이 31.01에서 27.66으로 감소
+- Hierarchical sampling이 없으면 PSNR이 31.01에서 30.06으로 감소
+- 입력 이미지 수를 100개에서 25개로 줄이면 PSNR이 31.01에서 27.78로 감소
+
+이는 각 구성 요소가 성능에 중요한 역할을 함을 보여줍니다.
+
+## 💡 결론 (Conclusion)
+
+장면을 연속 함수로 나타내기 위해 MLP를 사용하는 이전 작업의 결함을 직접 해결했습니다. 장면을 5D 신경 방사 필드(3D 위치와 2D 시야 방향의 함수로 부피 밀도와 시점 의존적 방출 방사 휘도를 출력하는 MLP)로 표현하면, 이산화된 복셀 표현을 출력하도록 깊은 합성곱 네트워크를 훈련하는 이전의 지배적인 접근 방식보다 더 나은 렌더링을 생성합니다.
+
+렌더링을 더 샘플 효율적으로 만들기 위해 계층적 샘플링 전략을 제안했지만, 신경 방사 필드를 효율적으로 최적화하고 렌더링하는 기술을 조사하는 데는 여전히 많은 진전이 필요합니다. 또 다른 향후 연구 방향은 해석 가능성입니다: 복셀 그리드 및 메쉬와 같은 샘플링된 표현은 렌더링된 뷰의 예상 품질 및 실패 모드에 대한 추론을 허용하지만, 깊은 신경망의 가중치에 장면을 인코딩할 때 이러한 문제를 분석하는 방법은 불분명합니다. 이 작업은 실제 세계 이미지를 기반으로 한 그래픽 파이프라인으로 진전을 이루며, 복잡한 장면은 실제 객체와 장면의 이미지에서 최적화된 신경 방사 필드로 구성될 수 있습니다.
