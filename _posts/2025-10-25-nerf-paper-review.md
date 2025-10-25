@@ -32,33 +32,42 @@ NeRF(Neural Radiance Fields)는 2020년 ECCV에서 발표된 3D vision 분야의
 
 ## 방법론
 
-### Neural Radiance Field 표현
+## Neural Radiance Field 표현
 
-연속적인 volumetric scene을 MLP \(F_\Theta\)로 표현:
+NeRF는 연속적인 volumetric scene을 MLP $F_\Theta$로 표현합니다:
 
-\[ F_\Theta: (\mathbf{x}, \mathbf{d}) \to (\mathbf{c}, \sigma) \]
+$$
+F_\Theta: (\mathbf{x}, \mathbf{d}) \to (\mathbf{c}, \sigma)
+$$
 
-- 입력: 3D 위치 \(\mathbf{x}\), 2D 방향 \(\mathbf{d}\)
-- 출력: RGB 색상 \(\mathbf{c}\), 볼륨 밀도 \(\sigma\)
+여기서:
+- 입력: 3D 위치 $\mathbf{x} = (x, y, z)$, 2D 방향 $\mathbf{d} = (\theta, \phi)$
+- 출력: RGB 색상 $\mathbf{c} = (r, g, b)$, 볼륨 밀도 $\sigma$
 
 ### Volume Rendering
 
-카메라 광선을 따라 색상 적분:
+카메라 광선 $\mathbf{r}(t) = \mathbf{o} + t\mathbf{d}$를 따라 색상을 적분합니다:
 
-\[ C(\mathbf{r}) = \int_{t_n}^{t_f} T(t) \cdot \sigma(\mathbf{r}(t)) \cdot \mathbf{c}(\mathbf{r}(t), \mathbf{d}) \, dt \]
+$$
+C(\mathbf{r}) = \int_{t_n}^{t_f} T(t) \cdot \sigma(\mathbf{r}(t)) \cdot \mathbf{c}(\mathbf{r}(t), \mathbf{d}) \, dt
+$$
 
-실제로는 64개 샘플로 수치 적분 수행.
+누적 투과도(transmittance)는 다음과 같이 정의됩니다:
 
-### Positional Encoding (핵심!)
+$$
+T(t) = \exp\left(-\int_{t_n}^{t} \sigma(\mathbf{r}(s)) \, ds\right)
+$$
 
-고주파 디테일을 위해 입력을 고차원 공간으로 매핑:
+## Positional Encoding
 
-\[ \gamma(p) = (\sin(2^0\pi p), \cos(2^0\pi p), \ldots, \sin(2^{L-1}\pi p), \cos(2^{L-1}\pi p)) \]
+고주파 디테일 학습을 위해 입력을 다음과 같이 인코딩합니다:
 
-- 위치: L=10 (60차원)
-- 방향: L=4 (24차원)
+$$
+\gamma(p) = \left(\sin(2^0\pi p), \cos(2^0\pi p), \ldots, \sin(2^{L-1}\pi p), \cos(2^{L-1}\pi p)\right)
+$$
 
-**이게 없으면 흐릿한 결과만 나옴!**
+위치의 경우 $L=10$ (60차원), 방향의 경우 $L=4$ (24차원)을 사용합니다.
+
 
 ## 실험 결과
 
@@ -68,7 +77,7 @@ NeRF(Neural Radiance Fields)는 2020년 ECCV에서 발표된 3D vision 분야의
 | LLFF | 24.88 | 0.911 | 0.114 |
 | **NeRF** | **31.01** | **0.947** | **0.081** |
 
-→ 6dB PSNR 향상은 시각적으로 엄청난 차이!
+PSNR이 $6 \text{dB}$ 향상되었으며, 이는 $\text{PSNR} = 10 \log_{10}\left(\frac{MAX^2}{MSE}\right)$로 계산됩니다.
 
 ## 산업공학 관점
 
